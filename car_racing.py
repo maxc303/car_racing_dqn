@@ -1,6 +1,6 @@
 import sys, math
 import numpy as np
-
+import utils as u
 import Box2D
 from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revoluteJointDef, contactListener)
 
@@ -506,7 +506,6 @@ if __name__=="__main__":
                 print("step {} total_reward {:+0.2f}".format(steps, total_reward))
                 import matplotlib.pyplot as plt
                 print(s.shape)
-                plt.imshow(s)
                 plt.savefig("test.jpeg")
                 print(env.tile_visited_count)
             steps += 1
