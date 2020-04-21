@@ -4,7 +4,6 @@
 # In[1]:
 
 
-#get_ipython().run_line_magic('matplotlib', 'inline')
 
 import gym
 from gym.wrappers import Monitor
@@ -16,6 +15,7 @@ import sys
 import psutil
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from tensorflow.python.client import device_lib
 
 if "../" not in sys.path:
   sys.path.append("../")
@@ -27,21 +27,45 @@ from collections import deque, namedtuple
 # In[2]:
 
 
-env = gym.envs.make("Breakout-v0")
-#env = gym.make("CarRacing-v0")
+device_lib.list_local_devices()
 
 
 # In[3]:
 
 
-# Atari Actions: 0 (noop), 1 (fire), 2 (left) and 3 (right) are valid actions
-VALID_ACTIONS = [0, 1, 2, 3]
-# Racing Car a
-VALID_ACTIONS = np.arange(0,16)
-#print(VALID_CR_ACTIONS)
+
+
+if tf.test.gpu_device_name(): 
+
+    print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
+
+else:
+
+   print("Please install GPU version of TF")
+config = tf.ConfigProto()
+
+config.gpu_options.allow_growth=True
+sess = tf.Session(config=config)
 
 
 # In[4]:
+
+
+#env = gym.envs.make("Breakout-v0")
+env = gym.make("CarRacing-v0")
+
+
+# In[5]:
+
+
+# Atari Actions: 0 (noop), 1 (fire), 2 (left) and 3 (right) are valid actions
+VALID_ACTIONS = [0, 1, 2, 3]
+# Racing Car a
+VALID_ACTIONS = np.arange(0,10)
+print(VALID_ACTIONS)
+
+
+# In[6]:
 
 
 def idx2act(num):
@@ -50,23 +74,25 @@ def idx2act(num):
     
     '''
     steer = 0.0
-    gas = 0.0
+    gas = 0.1
     brake = 0.0
-    if(num<9):
-        steer = (num-4)/4
-    if(num>=9 and num<13):
-        gas = (num - 9)/3
-    if(num>12):
-        brake = (num-12)/3
+    if(num<7):
+        steer = (num-3)/3
+    if(num==7):
+        gas = 0.5
+    if(num==8):
+        gas = 1
+    if(num==9):
+        brake = 0.5
         
     return [steer,gas,brake]
 
-
+idx2act(9)
         
         
 
 
-# In[5]:
+# In[7]:
 
 
 class StateProcessor():
@@ -95,7 +121,7 @@ class StateProcessor():
         return sess.run(self.output, { self.input_state: state })
 
 
-# In[6]:
+# In[8]:
 
 
 class CR_StateProcessor():
@@ -121,33 +147,33 @@ class CR_StateProcessor():
         return sess.run(self.output, { self.input_state: state })
 
 
-# In[7]:
+# In[9]:
 
 
-env = gym.make("CarRacing-v0")
-sp = CR_StateProcessor()
-observation = env.reset()
+# env = gym.make("CarRacing-v0")
+# sp = CR_StateProcessor()
+# observation = env.reset()
 
-for t in range(100):
-    action = env.action_space.sample()
-    observation, reward, done, _ = env.step(action)
-    env.render()
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+# for t in range(100):
+#     action = env.action_space.sample()
+#     observation, reward, done, _ = env.step(action)
+#     env.render()
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
     
-    # Example observation batch
-    #observation = env.reset()
+#     # Example observation batch
+#     #observation = env.reset()
     
-    observation_p = sp.process(sess, observation)
-    print(observation_p)
-    print(observation_p.shape)
+#     observation_p = sp.process(sess, observation)
+#     print(observation_p)
+#     print(observation_p.shape)
     
-    plt.imshow(observation_p)
-    plt.savefig("test.jpeg")
-env.close()
+#     plt.imshow(observation_p)
+#     plt.savefig("test.jpeg")
+# env.close()
 
 
-# In[8]:
+# In[10]:
 
 
 class Estimator():
@@ -254,38 +280,38 @@ class Estimator():
         return loss
 
 
-# In[9]:
+# In[11]:
 
 
-# For Testing....
+# # For Testing....
 
-tf.reset_default_graph()
-global_step = tf.Variable(0, name="global_step", trainable=False)
+# tf.reset_default_graph()
+# global_step = tf.Variable(0, name="global_step", trainable=False)
 
-e = Estimator(scope="test")
-sp = CR_StateProcessor()
+# e = Estimator(scope="test")
+# sp = CR_StateProcessor()
 
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
     
-    # Example observation batch
-    observation = env.reset()
+#     # Example observation batch
+#     observation = env.reset()
     
-    observation_p = sp.process(sess, observation)
-    observation = np.stack([observation_p] * 4, axis=2)
-    observations = np.array([observation] * 2)
+#     observation_p = sp.process(sess, observation)
+#     observation = np.stack([observation_p] * 4, axis=2)
+#     observations = np.array([observation] * 2)
     
-    # Test Prediction
-    print(e.predict(sess, observations))
+#     # Test Prediction
+#     print(e.predict(sess, observations))
 
-    # Test training step
-    y = np.array([10.0, 10.0])
-    a = np.array([1 ,9])
-    print(e.update(sess, observations, a, y))
-env.close()
+#     # Test training step
+#     y = np.array([10.0, 10.0])
+#     a = np.array([1 ,9])
+#     print(e.update(sess, observations, a, y))
+# env.close()
 
 
-# In[10]:
+# In[12]:
 
 
 class ModelParametersCopier():
@@ -319,7 +345,7 @@ class ModelParametersCopier():
         sess.run(self.update_ops)
 
 
-# In[11]:
+# In[13]:
 
 
 def make_epsilon_greedy_policy(estimator, nA):
@@ -340,11 +366,13 @@ def make_epsilon_greedy_policy(estimator, nA):
         q_values = estimator.predict(sess, np.expand_dims(observation, 0))[0]
         best_action = np.argmax(q_values)
         A[best_action] += (1.0 - epsilon)
+        #From the course slide
+     
         return A
     return policy_fn
 
 
-# In[12]:
+# In[17]:
 
 
 def deep_q_learning(sess,
@@ -540,7 +568,7 @@ def deep_q_learning(sess,
     return stats
 
 
-# In[13]:
+# In[20]:
 
 
 tf.reset_default_graph()
@@ -558,26 +586,33 @@ target_estimator = Estimator(scope="target_q")
 # State processor
 state_processor = CR_StateProcessor()
 
+# Running Average
+running_average_reward = 0
+# Episode Length
+num_episode = 0
 # Run it!
-with tf.Session() as sess:
+with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
     for t, stats in deep_q_learning(sess,
-                                    env,
-                                    q_estimator=q_estimator,
-                                    target_estimator=target_estimator,
-                                    state_processor=state_processor,
-                                    experiment_dir=experiment_dir,
-                                    num_episodes=10000,
-                                    replay_memory_size=500000,
-                                    replay_memory_init_size=10000,
-                                    update_target_estimator_every=10000,
-                                    epsilon_start=1.0,
-                                    epsilon_end=0.1,
-                                    epsilon_decay_steps=500000,
-                                    discount_factor=0.99,
-                                    batch_size=32):
-
-        print("\nEpisode Reward: {}".format(stats.episode_rewards[-1]))
+                                env,
+                                q_estimator=q_estimator,
+                                target_estimator=target_estimator,
+                                state_processor=state_processor,
+                                experiment_dir=experiment_dir,
+                                num_episodes=10000,
+                                replay_memory_size=50000,
+                                replay_memory_init_size=10000,
+                                update_target_estimator_every=5000,
+                                epsilon_start=0.8,
+                                epsilon_end=0.1,
+                                epsilon_decay_steps=500000,
+                                discount_factor=0.99,
+                                batch_size=32,
+                                record_video_every=25):
+     
+        running_average_reward = (running_average_reward * (num_episode) + stats.episode_rewards[-1])/(num_episode+1)
+        num_episode +=1
+        print("\nEpisode Reward: {} , Running average {}".format(stats.episode_rewards[-1],running_average_reward))
 
 
 # In[ ]:

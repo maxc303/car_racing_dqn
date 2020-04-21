@@ -9,12 +9,12 @@ if __name__=="__main__":
     for i_episode in range(n_episodes):
         observation = env.reset()
         sum_reward = 0
-        for t in range(1000):
+        for t in range(10000):
             if render:
                 env.render()
             # [steering, gas, brake]
             #action = env.action_space.sample()
-            action = [0,1,0.1]
+            action = [1,0.2,0.1]
             # observation is 96x96x3
             observation, reward, done, _ = env.step(action)
 
@@ -22,7 +22,7 @@ if __name__=="__main__":
             if (t % 100 == 0):
                 print(t)
                 print(action)
-            if done or t == 999:
+            if done or t == 10000:
                 print("Episode {} finished after {} timesteps".format(i_episode, t + 1))
                 print("Reward: {}".format(sum_reward))
                 rewards.append(sum_reward)
