@@ -3,27 +3,8 @@ import numpy as np
 import tensorflow as tf
 import itertools
 import gym
-VALID_ACTIONS = np.arange(0, 10)
+from action_config import VALID_ACTIONS, idx2act
 
-def idx2act(num):
-    '''
-    convert action index to action input for racing-car-v0
-
-    '''
-    steer = 0.0
-    gas = 0.1
-    brake = 0.0
-    if (num < 7):
-        steer = (num - 3) / 3
-    if (num == 7):
-        gas = 0.5
-    if (num == 8):
-        gas = 1
-    if (num == 9):
-        gas = 0
-        brake = 0.5
-
-    return [steer, gas, brake]
 class Estimator():
     """Q-Value Estimator neural network.
 
@@ -211,5 +192,4 @@ if __name__=="__main__":
     state_processor = CR_StateProcessor()
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
         run_model(sess,state_processor)

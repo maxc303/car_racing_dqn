@@ -23,7 +23,7 @@ if "../" not in sys.path:
 from lib import plotting
 from collections import deque, namedtuple
 
-
+from action_config import VALID_ACTIONS, idx2act
 # In[2]:
 
 
@@ -58,37 +58,12 @@ env = gym.make("CarRacing-v0")
 # In[5]:
 
 
-# Atari Actions: 0 (noop), 1 (fire), 2 (left) and 3 (right) are valid actions
-VALID_ACTIONS = [0, 1, 2, 3]
-# Racing Car a
-VALID_ACTIONS = np.arange(0,10)
-print(VALID_ACTIONS)
 
 
 # In[6]:
 
 
-def idx2act(num):
-    '''
-    convert action index to action input for racing-car-v0
-    
-    '''
-    steer = 0.0
-    gas = 0.1
-    brake = 0.0
-    if(num<7):
-        steer = (num-3)/3
-    if(num==7):
-        gas = 0.5
-    if(num==8):
-        gas = 1
-    if(num==9):
-        gas = 0
-        brake = 0.5
-        
-    return [steer,gas,brake]
 
-idx2act(9)
         
         
 
