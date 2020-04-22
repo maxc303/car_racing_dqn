@@ -95,4 +95,16 @@ def plot_episode_stats(stats, smoothing_window=10, noshow=False):
     else:
         plt.show(fig3)
 
-    return fig1, fig2, fig3
+    # Plot the episode reward over time
+    fig4 = plt.figure(figsize=(10, 5))
+    plt.plot(stats.episode_rewards)
+    plt.xlabel("Episode")
+    plt.ylabel("Episode Reward")
+    plt.title("Episode Reward")
+    if noshow:
+        plt.close(fig4)
+    else:
+        plt.show(fig4)
+
+
+    return fig1, fig2, fig3 ,fig4

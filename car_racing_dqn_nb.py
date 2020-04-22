@@ -83,6 +83,7 @@ def idx2act(num):
     if(num==8):
         gas = 1
     if(num==9):
+        gas = 0
         brake = 0.5
         
     return [steer,gas,brake]
@@ -578,7 +579,7 @@ experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
 
 # Create a glboal step variable
 global_step = tf.Variable(0, name='global_step', trainable=False)
-    
+
 # Create estimators
 q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
 target_estimator = Estimator(scope="target_q")
@@ -590,38 +591,45 @@ state_processor = CR_StateProcessor()
 running_average_reward = 0
 # Episode Length
 num_episode = 0
+# Episode reward and 50 average
+episode_reward_array = []
+avg_50_reward = []
+
 # Run it!
 with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
     for t, stats in deep_q_learning(sess,
-                                env,
-                                q_estimator=q_estimator,
-                                target_estimator=target_estimator,
-                                state_processor=state_processor,
-                                experiment_dir=experiment_dir,
-                                num_episodes=10000,
-                                replay_memory_size=50000,
-                                replay_memory_init_size=10000,
-                                update_target_estimator_every=5000,
-                                epsilon_start=0.8,
-                                epsilon_end=0.1,
-                                epsilon_decay_steps=500000,
-                                discount_factor=0.99,
-                                batch_size=32,
-                                record_video_every=25):
-     
-        running_average_reward = (running_average_reward * (num_episode) + stats.episode_rewards[-1])/(num_episode+1)
-        num_episode +=1
-        print("\nEpisode Reward: {} , Running average {}".format(stats.episode_rewards[-1],running_average_reward))
+                                    env,
+                                    q_estimator=q_estimator,
+                                    target_estimator=target_estimator,
+                                    state_processor=state_processor,
+                                    experiment_dir=experiment_dir,
+                                    num_episodes=3000,
+                                    replay_memory_size=100000,
+                                    replay_memory_init_size=10000,
+                                    update_target_estimator_every=10000,
+                                    epsilon_start=1,
+                                    epsilon_end=0.1,
+                                    epsilon_decay_steps=500000,
+                                    discount_factor=0.99,
+                                    batch_size=32,
+                                    record_video_every=50):
+        if num_episode % 50 == 0:
+            fig1, fig2, fig3, fig4 = plotting.plot_episode_stats(stats, smoothing_window=10, noshow=True)
+            fig1.savefig(experiment_dir + '/episode_length.jpg')
+            fig2.savefig(experiment_dir + '/reward.jpg')
+            fig3.savefig(experiment_dir + '/episode_per_t.jpg')
+            fig4.savefig(experiment_dir + '/episode_reward.jpg')
+        num_episode += 1
+        episode_reward_array.append(stats.episode_rewards[-1])
+        avg_50_reward.append(np.average(stats.episode_rewards[max(0, num_episode - 50):]))
+        print("\nEpisode Reward: {} , Last 50 average: {}".format(stats.episode_rewards[-1], np.average(
+            stats.episode_rewards[max(0, num_episode - 50):])))
+
 
 
 # In[ ]:
 
-
-
-
-
-# In[ ]:
 
 
 
