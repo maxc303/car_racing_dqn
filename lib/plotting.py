@@ -62,7 +62,7 @@ def plot_value_function(V, title="Value Function"):
 
 def plot_episode_stats(stats, smoothing_window=10, noshow=False):
     # Plot the episode length over time
-    fig1 = plt.figure(figsize=(10,5))
+    fig1 = plt.figure(figsize=(12,9))
     plt.plot(stats.episode_lengths)
     plt.xlabel("Episode")
     plt.ylabel("Episode Length")
@@ -73,7 +73,7 @@ def plot_episode_stats(stats, smoothing_window=10, noshow=False):
         plt.show(fig1)
 
     # Plot the episode reward over time
-    fig2 = plt.figure(figsize=(10,5))
+    fig2 = plt.figure(figsize=(12,9))
     rewards_smoothed = pd.Series(stats.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     plt.plot(rewards_smoothed)
     plt.xlabel("Episode")
@@ -85,7 +85,7 @@ def plot_episode_stats(stats, smoothing_window=10, noshow=False):
         plt.show(fig2)
 
     # Plot time steps and episode number
-    fig3 = plt.figure(figsize=(10,5))
+    fig3 = plt.figure(figsize=(12,9))
     plt.plot(np.cumsum(stats.episode_lengths), np.arange(len(stats.episode_lengths)))
     plt.xlabel("Time Steps")
     plt.ylabel("Episode")
@@ -96,7 +96,7 @@ def plot_episode_stats(stats, smoothing_window=10, noshow=False):
         plt.show(fig3)
 
     # Plot the episode reward over time
-    fig4 = plt.figure(figsize=(10, 5))
+    fig4 = plt.figure(figsize=(12, 9))
     plt.plot(stats.episode_rewards)
     plt.xlabel("Episode")
     plt.ylabel("Episode Reward")
