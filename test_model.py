@@ -153,6 +153,8 @@ class CR_StateProcessor():
         return sess.run(self.output, { self.input_state: state })
 def run_model(sess,state_processor):
     env = gym.make('CarRacing-v0')
+    env._max_episode_steps = 2000
+
     experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
 
     checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
@@ -169,16 +171,18 @@ def run_model(sess,state_processor):
     policy = make_policy(
         q_estimator,
         len(VALID_ACTIONS))
-
+    env.seed(0)
     state = env.reset()
+
     state = state_processor.process(sess, state)
     state = np.stack([state] * 4, axis=2)
-
+    total_reward = 0
     for t in itertools.count():
-
+        print(t)
         # Take a step
         best_action = policy(sess, state)
         next_state, reward, done, _ = env.step(idx2act(VALID_ACTIONS[best_action]))
+        total_reward += reward
         next_state = state_processor.process(sess, next_state)
         next_state = np.append(state[:, :, 1:], np.expand_dims(next_state, 2), axis=2)
         env.render()

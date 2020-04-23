@@ -442,6 +442,7 @@ def deep_q_learning(sess,
 
     # Populate the replay memory with initial experience
     print("Populating replay memory...")
+    env.seed(0)
     state = env.reset()
     state = state_processor.process(sess, state)
     state = np.stack([state] * 4, axis=2)
@@ -470,6 +471,7 @@ def deep_q_learning(sess,
         saver.save(tf.get_default_session(), checkpoint_path)
 
         # Reset the environment
+        env.seed(0)
         state = env.reset()
         state = state_processor.process(sess, state)
         state = np.stack([state] * 4, axis=2)
