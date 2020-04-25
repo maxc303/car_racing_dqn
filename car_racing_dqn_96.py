@@ -19,10 +19,8 @@ from tensorflow.python.client import device_lib
 
 if "../" not in sys.path:
   sys.path.append("../")
-
 from lib import plotting
 from collections import deque, namedtuple
-
 from action_config import VALID_ACTIONS, idx2act
 # In[2]:
 
@@ -106,7 +104,7 @@ class CR_StateProcessor():
         with tf.variable_scope("state_processor"):
             self.input_state = tf.placeholder(shape=[96, 96, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-            self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
+            #self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
 #             self.output = tf.image.resize_images(
 #                 self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
@@ -178,7 +176,7 @@ class Estimator():
 
         # Placeholders for our input
         # Our input are 4 grayscale frames of shape 84, 84 each
-        self.X_pl = tf.placeholder(shape=[None, 84, 84, 4], dtype=tf.uint8, name="X")
+        self.X_pl = tf.placeholder(shape=[None, 96, 96, 4], dtype=tf.uint8, name="X")
         # The TD target value
         self.y_pl = tf.placeholder(shape=[None], dtype=tf.float32, name="y")
         # Integer id of which action was selected

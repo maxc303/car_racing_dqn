@@ -151,15 +151,14 @@ class CR_StateProcessor():
             A processed [84, 84] state representing grayscale values.
         """
         return sess.run(self.output, { self.input_state: state })
-def run_model(sess,state_processor):
-    env = gym.make('CarRacing-v0')
-    env._max_episode_steps = 2000
+def run_model(sess,state_processor,q_estimator):
+
 
     experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
 
     checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
     checkpoint_path = os.path.join(checkpoint_dir, "model")
-    q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
+
 
     saver = tf.train.Saver()
     # Load a previous checkpoint if we find one
@@ -171,14 +170,14 @@ def run_model(sess,state_processor):
     policy = make_policy(
         q_estimator,
         len(VALID_ACTIONS))
-    env.seed(0)
+
     state = env.reset()
 
     state = state_processor.process(sess, state)
     state = np.stack([state] * 4, axis=2)
     total_reward = 0
     for t in itertools.count():
-        print(t)
+        #print(t)
         # Take a step
         best_action = policy(sess, state)
         next_state, reward, done, _ = env.step(idx2act(VALID_ACTIONS[best_action]))
@@ -190,10 +189,19 @@ def run_model(sess,state_processor):
             break
 
         state = next_state
-
     env.close()
-if __name__=="__main__":
-    state_processor = CR_StateProcessor()
+    return total_reward
 
+if __name__=="__main__":
+    env = gym.make('CarRacing-v0')
+    env._max_episode_steps = 1000
+    state_processor = CR_StateProcessor()
+    exp_rewards = 0
+    experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
+    q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
     with tf.Session() as sess:
-        run_model(sess,state_processor)
+        for i in range(10):
+            exp_rewards += run_model(sess,state_processor,q_estimator)
+
+
+    print("Average reward in 10 runs: ", exp_rewards)
