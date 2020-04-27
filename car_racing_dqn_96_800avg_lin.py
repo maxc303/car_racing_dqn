@@ -14,14 +14,13 @@ import random
 import sys
 import psutil
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.python.client import device_lib
 
 if "../" not in sys.path:
   sys.path.append("../")
-
 from lib import plotting
 from collections import deque, namedtuple
-
 from action_config import VALID_ACTIONS, idx2act
 # In[2]:
 
@@ -105,9 +104,9 @@ class CR_StateProcessor():
         with tf.variable_scope("state_processor"):
             self.input_state = tf.placeholder(shape=[96, 96, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-            # self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
-            # self.output = tf.image.resize_images(
-            #     self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            #self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
+#             self.output = tf.image.resize_images(
+#                 self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
 
     def process(self, sess, state):
@@ -178,7 +177,6 @@ class Estimator():
         # Placeholders for our input
         # Our input are 4 grayscale frames of shape 84, 84 each
         self.X_pl = tf.placeholder(shape=[None, 96, 96, 4], dtype=tf.uint8, name="X")
-
         # The TD target value
         self.y_pl = tf.placeholder(shape=[None], dtype=tf.float32, name="y")
         # Integer id of which action was selected
@@ -190,9 +188,6 @@ class Estimator():
         # Three convolutional layers
         conv1 = tf.contrib.layers.conv2d(
             X, 32, 8, 4, activation_fn=tf.nn.relu)
-
-        # Add a dropout layer here
-
         conv2 = tf.contrib.layers.conv2d(
             conv1, 64, 4, 2, activation_fn=tf.nn.relu)
         conv3 = tf.contrib.layers.conv2d(
@@ -201,7 +196,7 @@ class Estimator():
         # Fully connected layers
         flattened = tf.contrib.layers.flatten(conv3)
         fc1 = tf.contrib.layers.fully_connected(flattened, 512)
-        self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS))
+        self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS),activation_fn=None)
 
         # Get the predictions for the chosen actions only
         gather_indices = tf.range(batch_size) * tf.shape(self.predictions)[1] + self.actions_pl
@@ -517,14 +512,8 @@ def deep_q_learning(sess,
             states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(np.array, zip(*samples))
 
             # Calculate q values and targets
-            # q_values_next = target_estimator.predict(sess, next_states_batch)
-            # targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * discount_factor * np.amax(q_values_next, axis=1)
-            # Calculate double values and targets
-            q_values_next = q_estimator.predict(sess, next_states_batch)
-            best_actions = np.argmax(q_values_next, axis=1)
-            q_values_next_target = target_estimator.predict(sess, next_states_batch)
-            targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * \
-                            discount_factor * q_values_next_target[np.arange(batch_size), best_actions]
+            q_values_next = target_estimator.predict(sess, next_states_batch)
+            targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * discount_factor * np.amax(q_values_next, axis=1)
 
             # Perform gradient descent update
             states_batch = np.array(states_batch)
@@ -588,7 +577,7 @@ with tf.Session(config=config) as sess:
                                     target_estimator=target_estimator,
                                     state_processor=state_processor,
                                     experiment_dir=experiment_dir,
-                                    num_episodes=5000,
+                                    num_episodes=3000,
                                     replay_memory_size=200000,
                                     replay_memory_init_size=20000,
                                     update_target_estimator_every=10000,

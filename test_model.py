@@ -4,6 +4,7 @@ import tensorflow as tf
 import itertools
 import gym
 from action_config import VALID_ACTIONS, idx2act
+from matplotlib import pyplot as plt
 
 class Estimator():
     """Q-Value Estimator neural network.
@@ -31,7 +32,7 @@ class Estimator():
 
         # Placeholders for our input
         # Our input are 4 grayscale frames of shape 84, 84 each
-        self.X_pl = tf.placeholder(shape=[None, 84, 84, 4], dtype=tf.uint8, name="X")
+        self.X_pl = tf.placeholder(shape=[None, 96, 96, 4], dtype=tf.uint8, name="X")
         # The TD target value
         self.y_pl = tf.placeholder(shape=[None], dtype=tf.float32, name="y")
         # Integer id of which action was selected
@@ -136,7 +137,7 @@ class CR_StateProcessor():
         with tf.variable_scope("state_processor"):
             self.input_state = tf.placeholder(shape=[96, 96, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-            self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
+         #   self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
 #             self.output = tf.image.resize_images(
 #                 self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
@@ -158,11 +159,13 @@ def run_model(sess,state_processor,q_estimator):
 
     checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
     checkpoint_path = os.path.join(checkpoint_dir, "model")
+   ## bestcheckpoint_path =  os.path.join(checkpoint_dir, "best_model")
 
 
     saver = tf.train.Saver()
     # Load a previous checkpoint if we find one
     latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+
     if latest_checkpoint:
         print("Loading model checkpoint {}...\n".format(latest_checkpoint))
         saver.restore(sess, latest_checkpoint)
@@ -170,6 +173,7 @@ def run_model(sess,state_processor,q_estimator):
     policy = make_policy(
         q_estimator,
         len(VALID_ACTIONS))
+    env.seed(0)
 
     state = env.reset()
 
@@ -191,8 +195,32 @@ def run_model(sess,state_processor,q_estimator):
         state = next_state
     env.close()
     return total_reward
-
+CUDA_VISIBLE_DEVICES=""
 if __name__=="__main__":
+
+    env = gym.make("CarRacing-v0")
+    observation = env.reset()
+    #sp = CR_StateProcessor()
+    # for t in range(100):
+    #     action = env.action_space.sample()
+    #     observation, reward, done, _ = env.step(action)
+    #     env.render()
+    #
+    # with tf.Session() as sess:
+    #     sess.run(tf.global_variables_initializer())
+    #
+    #     # Example observation batch
+    #     #observation = env.reset()
+    #
+    #     observation_p = sp.process(sess, observation)
+    #     print(observation_p)
+    #     print(observation_p.shape)
+    #
+    #     plt.imshow(observation_p)
+    #     plt.savefig("test.png")
+    # env.close()
+
+
     env = gym.make('CarRacing-v0')
     env._max_episode_steps = 1000
     state_processor = CR_StateProcessor()
@@ -201,7 +229,9 @@ if __name__=="__main__":
     q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
     with tf.Session() as sess:
         for i in range(10):
-            exp_rewards += run_model(sess,state_processor,q_estimator)
+            reward = run_model(sess,state_processor,q_estimator)
+            exp_rewards += reward
 
 
-    print("Average reward in 10 runs: ", exp_rewards)
+
+    print("Average reward in 10 runs: ", exp_rewards/10)
