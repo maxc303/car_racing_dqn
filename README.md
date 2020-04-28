@@ -8,7 +8,7 @@ A solution for Carracing-V0 from OpenAi gym using Deep Q-learning. The DQN model
 
 [Human-level control through deep reinforcement
 learning](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)
-
+(Algorithm of the DQN solution)
 
 
 
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 ## Run
 ```
-Train the model. It takes 8 hours to train 2000 episodes on GTX1070 GPU
+#Train the model. It takes 8 hours to train 2000 episodes on GTX1070 GPU
 python car_racing_dqn_train.py
 
 # Change the action space disretization in 
@@ -40,7 +40,7 @@ python car_racing_dqn_test.py
 ## Result
 Average total reward ~800 on 100 trials (ReLU output)
 
-Episode Rewards:
+Episode Rewards:\
 <img src="./images/96_800_reward.png" width="400">
 <img src="./images/9696_800.jpg" width="400">
 
