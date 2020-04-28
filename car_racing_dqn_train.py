@@ -14,7 +14,9 @@ if "../" not in sys.path:
 from lib import plotting
 from collections import deque, namedtuple
 from action_config import VALID_ACTIONS, idx2act
-
+# Set GPU, uncomment to used cpu
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
 
 class CarStateProcessor():
     """
@@ -410,9 +412,7 @@ if __name__=="__main__":
     else:
         print("Please install GPU version of TF")
 
-    # Set GPU, uncomment to used cpu
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+
 
     #Init Environment
     env = gym.make('CarRacing-v0')

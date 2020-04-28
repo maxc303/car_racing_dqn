@@ -42,7 +42,7 @@ Average total reward ~800 on 100 trials (ReLU output)
 
 Episode Rewards:
 <img src="./images/96_800_reward.png" width="400">
-<img src="./images/9696_800.png" width="400">
+<img src="./images/9696_800.jpg" width="400">
 
 50th Episode 
 ![50episode](images/50.gif)\
