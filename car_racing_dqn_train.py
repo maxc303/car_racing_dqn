@@ -1,6 +1,3 @@
-
-
-
 import gym
 from gym.wrappers import Monitor
 import itertools
@@ -18,83 +15,22 @@ from lib import plotting
 from collections import deque, namedtuple
 from action_config import VALID_ACTIONS, idx2act
 
-device_lib.list_local_devices()
 
-
-if tf.test.gpu_device_name(): 
-
-    print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
-
-else:
-
-   print("Please install GPU version of TF")
-config = tf.ConfigProto()
-
-config.gpu_options.allow_growth=True
-sess = tf.Session(config=config)
-
-
-# In[4]:
-
-
-#env = gym.envs.make("Breakout-v0")
-env = gym.make("CarRacing-v0")
-
-
-# In[5]:
-
-
-
-
-# In[6]:
-
-
-
-        
-        
-
-
-# In[7]:
-
-
-class StateProcessor():
+class CarStateProcessor():
     """
-    Processes a raw Atari images. Resizes it and converts it to grayscale.
+    State processsor for Carracing-v0 input
+    Convert the RGB input to grey-scale
     """
+
     def __init__(self):
         # Build the Tensorflow graph
         with tf.variable_scope("state_processor"):
-            self.input_state = tf.placeholder(shape=[210, 160, 3], dtype=tf.uint8)
-            self.output = tf.image.rgb_to_grayscale(self.input_state)
-            self.output = tf.image.crop_to_bounding_box(self.output, 34, 0, 160, 160)
-            self.output = tf.image.resize_images(
-                self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-            self.output = tf.squeeze(self.output)
-
-    def process(self, sess, state):
-        """
-        Args:
-            sess: A Tensorflow session object
-            state: A [210, 160, 3] Atari RGB State
-
-        Returns:
-            A processed [84, 84] state representing grayscale values.
-        """
-        return sess.run(self.output, { self.input_state: state })
-
-
-# In[8]:
-
-
-class CR_StateProcessor():
-    def __init__(self):
-    # Build the Tensorflow graph
-        with tf.variable_scope("state_processor"):
             self.input_state = tf.placeholder(shape=[96, 96, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-            #self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
-#             self.output = tf.image.resize_images(
-#                 self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            # Uncomment to crop the image to 84x84
+            # self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
+            # self.output = tf.image.resize_images(
+            #     self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
 
     def process(self, sess, state):
@@ -104,43 +40,13 @@ class CR_StateProcessor():
             state: A [210, 160, 3] Atari RGB State
 
         Returns:
-            A processed [84, 84] state representing grayscale values.
+            A processed [96, 96] state representing grayscale values.
         """
         return sess.run(self.output, { self.input_state: state })
-
-
-# In[9]:
-
-
-# env = gym.make("CarRacing-v0")
-# sp = CR_StateProcessor()
-# observation = env.reset()
-
-# for t in range(100):
-#     action = env.action_space.sample()
-#     observation, reward, done, _ = env.step(action)
-#     env.render()
-# with tf.Session() as sess:
-#     sess.run(tf.global_variables_initializer())
-    
-#     # Example observation batch
-#     #observation = env.reset()
-    
-#     observation_p = sp.process(sess, observation)
-#     print(observation_p)
-#     print(observation_p.shape)
-    
-#     plt.imshow(observation_p)
-#     plt.savefig("test.jpeg")
-# env.close()
-
-
-# In[10]:
 
 
 class Estimator():
     """Q-Value Estimator neural network.
-
     This network is used for both the Q-Network and the Target Network.
     """
 
@@ -163,7 +69,7 @@ class Estimator():
         """
 
         # Placeholders for our input
-        # Our input are 4 grayscale frames of shape 84, 84 each
+        # Our input are 4 grayscale frames of shape 96, 96 each
         self.X_pl = tf.placeholder(shape=[None, 96, 96, 4], dtype=tf.uint8, name="X")
         # The TD target value
         self.y_pl = tf.placeholder(shape=[None], dtype=tf.float32, name="y")
@@ -184,7 +90,12 @@ class Estimator():
         # Fully connected layers
         flattened = tf.contrib.layers.flatten(conv3)
         fc1 = tf.contrib.layers.fully_connected(flattened, 512)
-        self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS))
+
+        # # ReLU activation output layer
+        # self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS))
+
+        # Linear output layer
+        self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS), activation_fn=None)
 
         # Get the predictions for the chosen actions only
         gather_indices = tf.range(batch_size) * tf.shape(self.predictions)[1] + self.actions_pl
@@ -212,7 +123,7 @@ class Estimator():
 
         Args:
           sess: Tensorflow session
-          s: State input of shape [batch_size, 4, 84, 84, 1]
+          s: State input of shape [batch_size, 4, 96, 96, 1]
 
         Returns:
           Tensor of shape [batch_size, NUM_VALID_ACTIONS] containing the estimated 
@@ -226,7 +137,7 @@ class Estimator():
 
         Args:
           sess: Tensorflow session object
-          s: State input of shape [batch_size, 4, 84, 84, 1]
+          s: State input of shape [batch_size, 4, 96, 96, 1]
           a: Chosen actions of shape [batch_size]
           y: Targets of shape [batch_size]
 
@@ -242,50 +153,17 @@ class Estimator():
         return loss
 
 
-# In[11]:
-
-
-# # For Testing....
-
-# tf.reset_default_graph()
-# global_step = tf.Variable(0, name="global_step", trainable=False)
-
-# e = Estimator(scope="test")
-# sp = CR_StateProcessor()
-
-# with tf.Session() as sess:
-#     sess.run(tf.global_variables_initializer())
-    
-#     # Example observation batch
-#     observation = env.reset()
-    
-#     observation_p = sp.process(sess, observation)
-#     observation = np.stack([observation_p] * 4, axis=2)
-#     observations = np.array([observation] * 2)
-    
-#     # Test Prediction
-#     print(e.predict(sess, observations))
-
-#     # Test training step
-#     y = np.array([10.0, 10.0])
-#     a = np.array([1 ,9])
-#     print(e.update(sess, observations, a, y))
-# env.close()
-
-
-# In[12]:
-
-
 class ModelParametersCopier():
     """
     Copy model parameters of one estimator to another.
+    Predict -> Target
     """
     
     def __init__(self, estimator1, estimator2):
         """
         Defines copy-work operation graph.  
         Args:
-          estimator1: Estimator to copy the paramters from
+          estimator1: Estimator to copy the parameters from
           estimator2: Estimator to copy the parameters to
         """
         e1_params = [t for t in tf.trainable_variables() if t.name.startswith(estimator1.scope)]
@@ -307,9 +185,6 @@ class ModelParametersCopier():
         sess.run(self.update_ops)
 
 
-# In[13]:
-
-
 def make_epsilon_greedy_policy(estimator, nA):
     """
     Creates an epsilon-greedy policy based on a given Q-function approximator and epsilon.
@@ -328,13 +203,9 @@ def make_epsilon_greedy_policy(estimator, nA):
         q_values = estimator.predict(sess, np.expand_dims(observation, 0))[0]
         best_action = np.argmax(q_values)
         A[best_action] += (1.0 - epsilon)
-        #From the course slide
-     
+
         return A
     return policy_fn
-
-
-# In[17]:
 
 
 def deep_q_learning(sess,
@@ -445,7 +316,6 @@ def deep_q_learning(sess,
         else:
             state = next_state
 
-
     # Record videos
     # Add env Monitor wrapper
     env = Monitor(env, directory=monitor_path, video_callable=lambda count: count % record_video_every == 0, resume=True)
@@ -483,7 +353,7 @@ def deep_q_learning(sess,
             next_state, reward, done, _ = env.step(idx2act(VALID_ACTIONS[action]))
             next_state = state_processor.process(sess, next_state)
             next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2)
-            #env.render()
+
             # If our replay memory is full, pop the first element
             if len(replay_memory) == replay_memory_size:
                 replay_memory.pop(0)
@@ -530,74 +400,81 @@ def deep_q_learning(sess,
     return stats
 
 
-# In[20]:
-
-
-tf.reset_default_graph()
-
-# Where we save our checkpoints and graphs
-experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
-
-# Create a glboal step variable
-global_step = tf.Variable(0, name='global_step', trainable=False)
-
-# Create estimators
-q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
-target_estimator = Estimator(scope="target_q")
-
-# State processor
-state_processor = CR_StateProcessor()
-
-# Running Average
-running_average_reward = 0
-# Episode Length
-num_episode = 0
-# Episode reward and 50 average
-episode_reward_array = []
-avg_50_reward = []
-
-# Run it!
-with tf.Session(config=config) as sess:
-    sess.run(tf.global_variables_initializer())
-    for t, stats in deep_q_learning(sess,
-                                    env,
-                                    q_estimator=q_estimator,
-                                    target_estimator=target_estimator,
-                                    state_processor=state_processor,
-                                    experiment_dir=experiment_dir,
-                                    num_episodes=3000,
-                                    replay_memory_size=200000,
-                                    replay_memory_init_size=20000,
-                                    update_target_estimator_every=10000,
-                                    epsilon_start=1,
-                                    epsilon_end=0.1,
-                                    epsilon_decay_steps=500000,
-                                    discount_factor=0.99,
-                                    batch_size=32,
-                                    record_video_every=50):
-        episode_reward_array.append(stats.episode_rewards[-1])
-        if num_episode % 50 == 0:
-            fig1, fig2, fig3, fig4 = plotting.plot_episode_stats(stats, smoothing_window=10, noshow=True)
-            fig1.savefig(experiment_dir + '/episode_length.jpg')
-            fig2.savefig(experiment_dir + '/reward.jpg')
-            fig3.savefig(experiment_dir + '/episode_per_t.jpg')
-            fig4.savefig(experiment_dir + '/episode_reward.jpg')
-            np.savetxt(experiment_dir + '/episode_reward.txt', episode_reward_array, newline=" ")
-        num_episode += 1
-        avg_50_reward.append(np.average(stats.episode_rewards[max(0, num_episode - 50):]))
-        print("\nEpisode Reward: {} , Last 50 average: {}".format(stats.episode_rewards[-1], np.average(
-            stats.episode_rewards[max(0, num_episode - 50):])))
 
 
 
-# In[ ]:
+if __name__=="__main__":
+    # Check avaliable GPU
+    if tf.test.gpu_device_name():
+        print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
+    else:
+        print("Please install GPU version of TF")
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+    # Set GPU, uncomment to used cpu
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+
+    #Init Environment
+    env = gym.make('CarRacing-v0')
+    tf.reset_default_graph()
+
+    # Where we save our checkpoints and graphs
+    experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
+
+    # Create a global step variable
+    global_step = tf.Variable(0, name='global_step', trainable=False)
+
+    # Create estimators
+    q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
+    target_estimator = Estimator(scope="target_q")
+
+    # State processor
+    state_processor = CarStateProcessor()
+
+    # Running Average
+    running_average_reward = 0
+    # Episode Length
+    num_episode = 0
+    # Episode reward and 50 average
+    episode_reward_array = []
+    avg_50_reward = []
+
+    # Train the model
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for t, stats in deep_q_learning(sess,
+                                        env,
+                                        q_estimator=q_estimator,
+                                        target_estimator=target_estimator,
+                                        state_processor=state_processor,
+                                        experiment_dir=experiment_dir,
+                                        num_episodes=3000,
+                                        replay_memory_size=200000,
+                                        replay_memory_init_size=1000,
+                                        update_target_estimator_every=10000,
+                                        epsilon_start=1,
+                                        epsilon_end=0.1,
+                                        epsilon_decay_steps=500000,
+                                        discount_factor=0.99,
+                                        batch_size=32,
+                                        record_video_every=50):
+            episode_reward_array.append(stats.episode_rewards[-1])
+            # Save the data
+            if num_episode % 50 == 0:
+                fig1, fig2, fig3, fig4 = plotting.plot_episode_stats(stats, smoothing_window=10, noshow=True)
+                fig1.savefig(experiment_dir + '/episode_length.jpg')
+                fig2.savefig(experiment_dir + '/reward.jpg')
+                fig3.savefig(experiment_dir + '/episode_per_t.jpg')
+                fig4.savefig(experiment_dir + '/episode_reward.jpg')
+                np.savetxt(experiment_dir + '/episode_reward.txt', episode_reward_array, newline=" ")
+            num_episode += 1
+            avg_50_reward.append(np.average(stats.episode_rewards[max(0, num_episode - 50):]))
+
+            print("\nEpisode Reward: {} , Last 50 average: {}".format(stats.episode_rewards[-1], np.average(
+                stats.episode_rewards[max(0, num_episode - 50):])))
 
 
-
-
-
-
-# In[ ]:
 
 
 
