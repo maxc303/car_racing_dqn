@@ -137,9 +137,9 @@ class CR_StateProcessor():
         with tf.variable_scope("state_processor"):
             self.input_state = tf.placeholder(shape=[96, 96, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-         #   self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
-#             self.output = tf.image.resize_images(
-#                 self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            # self.output = tf.image.crop_to_bounding_box(self.output, 0, 6, 84, 84)
+            # self.output = tf.image.resize_images(
+            #     self.output, [84, 84], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
 
     def process(self, sess, state):
@@ -173,7 +173,7 @@ def run_model(sess,state_processor,q_estimator):
     policy = make_policy(
         q_estimator,
         len(VALID_ACTIONS))
-    env.seed(0)
+   # env.seed(0)
 
     state = env.reset()
 
@@ -188,19 +188,20 @@ def run_model(sess,state_processor,q_estimator):
         total_reward += reward
         next_state = state_processor.process(sess, next_state)
         next_state = np.append(state[:, :, 1:], np.expand_dims(next_state, 2), axis=2)
-        env.render()
+        #env.render()
         if done:
             break
 
         state = next_state
-    env.close()
     return total_reward
 CUDA_VISIBLE_DEVICES=""
+env = gym.make('CarRacing-v0')
+
 if __name__=="__main__":
 
-    env = gym.make("CarRacing-v0")
-    observation = env.reset()
-    #sp = CR_StateProcessor()
+    # env = gym.make("CarRacing-v0")
+    # observation = env.reset()
+    # sp = CR_StateProcessor()
     # for t in range(100):
     #     action = env.action_space.sample()
     #     observation, reward, done, _ = env.step(action)
@@ -215,23 +216,24 @@ if __name__=="__main__":
     #     observation_p = sp.process(sess, observation)
     #     print(observation_p)
     #     print(observation_p.shape)
-    #
-    #     plt.imshow(observation_p)
+    #     plt.imshow(observation_p, cmap="gray")
     #     plt.savefig("test.png")
+    #
     # env.close()
 
 
-    env = gym.make('CarRacing-v0')
     env._max_episode_steps = 1000
     state_processor = CR_StateProcessor()
     exp_rewards = 0
     experiment_dir = os.path.abspath("./experiments/{}".format(env.spec.id))
     q_estimator = Estimator(scope="q_estimator", summaries_dir=experiment_dir)
     with tf.Session() as sess:
-        for i in range(10):
+        for i in range(100):
+            print("Start the test #",i)
             reward = run_model(sess,state_processor,q_estimator)
             exp_rewards += reward
 
+    env.close()
 
 
-    print("Average reward in 10 runs: ", exp_rewards/10)
+    print("Average reward in 100 runs: ", exp_rewards/100)

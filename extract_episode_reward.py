@@ -4,7 +4,7 @@ import pandas as pd
 experiment_dir = os.path.abspath("./experiments/CarRacing-v0")
 experiment_dir = os.path.abspath("./experiments/9696-800avg/CarRacing-v0")
 experiment1_dir = os.path.abspath("./experiments/9696_fullbrake/CarRacing-v0")
-experiment_fix_dir = os.path.abspath("./experiments/96fix_2000epi/CarRacing-v0")
+experiment_fix_dir = os.path.abspath("./experiments/Apr22_afternoon/CarRacing-v0")
 
 def read_result(experiment_dir):
     f = open(experiment_dir+"/episode_reward.txt", "r")
@@ -46,8 +46,8 @@ def plot_avg_compare(dir1,dir2,smoothing_window =100):
     rewards2 = pd.Series(rewards2).rolling(smoothing_window, min_periods=smoothing_window).mean()
 
     fig = plt.figure(figsize=(8, 6))
-    plt.plot(rewards1, label="with full brake")
-    plt.plot(rewards2, label="without full brake")
+    plt.plot(rewards1, label="ReLU")
+    plt.plot(rewards2, label="Linear")
     plt.legend()
     plt.xlabel("Episode")
     plt.ylabel("Episode Reward (Smoothed)")
@@ -56,9 +56,11 @@ def plot_avg_compare(dir1,dir2,smoothing_window =100):
     fig.savefig("forreport.png")
 
 if __name__=="__main__":
-    # rewards = read_result(experiment1_dir)
-    # plot_avg(rewards)
-    #plot_avg_compare(experiment1_dir,experiment_dir)
-    fix_reward = read_result(experiment_fix_dir)
-    print(max(fix_reward))
-    plot_avg(fix_reward)
+     experiment1_dir = os.path.abspath("./experiments/9696_fullbrake/CarRacing-v0")
+     rewards = read_result(experiment1_dir)
+     plot_avg(rewards,1)
+    # dir01 = os.path.abspath("./experiments/96_lin_800/CarRacing-v0")
+    #
+    # experiment_dir = os.path.abspath("./experiments/9696-800avg/CarRacing-v0")
+    # # experiment1_dir = os.path.abspath("./experiments/96_lin_800/CarRacing-v0")
+    # plot_avg_compare(experiment_dir,dir01)

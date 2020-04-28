@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
 
 
 
@@ -16,21 +12,13 @@ import psutil
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.python.client import device_lib
-
 if "../" not in sys.path:
   sys.path.append("../")
 from lib import plotting
 from collections import deque, namedtuple
 from action_config import VALID_ACTIONS, idx2act
-# In[2]:
-
 
 device_lib.list_local_devices()
-
-
-# In[3]:
-
-
 
 
 if tf.test.gpu_device_name(): 
