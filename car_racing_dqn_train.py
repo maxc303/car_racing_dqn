@@ -409,7 +409,6 @@ if __name__=="__main__":
         print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
     else:
         print("Please install GPU version of TF")
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Set GPU, uncomment to used cpu
     config = tf.ConfigProto()
@@ -441,7 +440,7 @@ if __name__=="__main__":
     avg_50_reward = []
 
     # Train the model
-    with tf.Session() as sess:
+    with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         for t, stats in deep_q_learning(sess,
                                         env,
